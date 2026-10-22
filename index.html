@@ -1,127 +1,440 @@
-
+```html
 <!DOCTYPE html>
 <html lang="no">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NFL Live</title>
-<style>
-  body {
-    margin: 0; padding: 16px;
-    background: #090d16; color: white;
-    font: 15px system-ui, sans-serif;
-  }
-  h1 { margin-top: 0; }
-  #games {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-    gap: 12px;
-  }
-  .game {
-    background: #171f2e;
-    border: 1px solid #2a3548;
-    border-radius: 14px;
-    padding: 14px;
-  }
-  .status {
-    color: #9caac0;
-    text-align: center;
-    font-size: 12px;
-    margin-bottom: 12px;
-  }
-  .live { color: #5df0aa; }
-  .team {
-    display: grid;
-    grid-template-columns: 32px 1fr auto;
-    align-items: center;
-    gap: 8px;
-    margin: 12px 0;
-  }
-  img { width: 30px; height: 30px; object-fit: contain; }
-  .name { font-weight: 700; font-size: 12px; }
-  .record { display: block; color: #9caac0; font-size: 10px; }
-  .score { font-size: 26px; font-weight: 800; }
-  #updated { color: #9caac0; font-size: 12px; margin: 16px 0; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFL Live Scores</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --tile: #151c2e;
+      --tile-border: #273149;
+      --text: #f4f6fb;
+      --muted: #929db2;
+      --accent: #72e0a0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px 16px 40px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      font-size: clamp(24px, 4vw, 34px);
+      margin: 0;
+      letter-spacing: -0.7px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 7px;
+    }
+
+    .refresh {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .games {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .game {
+      background: var(--tile);
+      border: 1px solid var(--tile-border);
+      border-radius: 15px;
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .game-date {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .status {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .status.live {
+      color: #ff7373;
+    }
+
+    .status.final {
+      color: var(--accent);
+    }
+
+    .team-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+    }
+
+    .team-info {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .team-logo {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .team-text {
+      min-width: 0;
+    }
+
+    .team-name {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
+
+    /* Diskret WIN-LOSSES under lagnavnet */
+    .team-record {
+      color: #929db2;
+      font-size: 11px;
+      margin-top: 3px;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+    }
+
+    .team-score {
+      font-size: 25px;
+      font-weight: 800;
+      min-width: 25px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .game-footer {
+      border-top: 1px solid var(--tile-border);
+      margin-top: 10px;
+      padding-top: 11px;
+      color: var(--muted);
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .message {
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--muted);
+      background: var(--tile);
+      border-radius: 15px;
+      line-height: 1.6;
+    }
+
+    .error {
+      color: #ff9292;
+    }
+
+    @media (max-width: 400px) {
+      body {
+        padding: 18px 10px 30px;
+      }
+
+      .games {
+        grid-template-columns: 1fr;
+      }
+
+      .game {
+        padding: 13px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<h1>🏈 NFL LIVE</h1>
-<div id="updated">Henter resultater …</div>
-<main id="games"></main>
+  <main class="container">
+    <header>
+      <div>
+        <h1>🏈 NFL Scores</h1>
+        <div class="subtitle">
+          Resultater, kampstatus og lagstatistikk
+        </div>
+      </div>
 
-<script>
-const API =
-  "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+      <div class="refresh" id="lastUpdated">
+        Henter resultater …
+      </div>
+    </header>
 
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
-  "&":"&amp;", "<":"&lt;", ">":"&gt;",
-  '"':"&quot;", "'":"&#39;"
-})[c]);
+    <section id="games" class="games">
+      <div class="message">Laster NFL-kamper …</div>
+    </section>
+  </main>
 
-function record(team) {
-  const records = team.records || [];
-  return records.find(r => r.type === "total")?.summary
-    || records[0]?.summary || "";
-}
+  <script>
+    const API_URL =
+      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
-function teamHTML(t) {
-  const logo = t.team.logo || "";
-  return `<div class="team">
-    <img src="${esc(logo)}" alt="">
-    <div class="name">${esc(t.team.displayName)}
-      <span class="record">${esc(record(t.team))}</span>
-    </div>
-    <div class="score">${esc(t.score ?? "–")}</div>
-  </div>`;
-}
+    const REFRESH_INTERVAL = 15000;
 
-async function refresh() {
-  try {
-    const r = await fetch(API, {cache: "no-store"});
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const data = await r.json();
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
 
-    document.querySelector("#games").innerHTML =
-      (data.events || []).map(event => {
-        const c = event.competitions?.[0];
-        if (!c) return "";
-        const teams = c.competitors || [];
-        const away = teams.find(t => t.homeAway === "away");
-        const home = teams.find(t => t.homeAway === "home");
-        if (!away || !home) return "";
+    // Viser dato og klokkeslett i norsk tid.
+    function norskDato(isoDato) {
+      if (!isoDato) return "Tidspunkt ikke tilgjengelig";
 
-        const status = c.status?.type || event.status?.type || {};
-        const live = status.state === "in";
-        const label = status.shortDetail || status.detail
-          || (status.completed ? "Ferdig" : "Kommende");
+      const dato = new Date(isoDato);
 
-        return `<article class="game">
-          <div class="status ${live ? "live" : ""}">
-            ${live ? "● LIVE · " : ""}${esc(label)}
+      if (Number.isNaN(dato.getTime())) {
+        return "Tidspunkt ikke tilgjengelig";
+      }
+
+      const datoDel = new Intl.DateTimeFormat("nb-NO", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        timeZone: "Europe/Oslo"
+      }).format(dato);
+
+      const tidDel = new Intl.DateTimeFormat("nb-NO", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+        timeZone: "Europe/Oslo"
+      }).format(dato);
+
+      return `${datoDel} kl. ${tidDel}`;
+    }
+
+    // Hent lagets W-L-statistikk fra ESPN.
+    function hentRecord(team) {
+      const records = team.records || [];
+
+      const overall = records.find(record =>
+        /overall|total|regular season/i.test(
+          `${record.type || ""} ${record.name || ""} ${record.abbreviation || ""}`
+        )
+      );
+
+      const valgt = overall || records[0];
+
+      if (valgt?.summary) {
+        return valgt.summary.replace(/-/g, "–");
+      }
+
+      // Enkel reserve hvis API-et leverer seire og tap separat.
+      if (valgt && valgt.wins != null && valgt.losses != null) {
+        return `${valgt.wins}–${valgt.losses}`;
+      }
+
+      return "";
+    }
+
+    function lagRad(competitor) {
+      const team = competitor.team || {};
+      const navn = team.displayName || team.name || "Ukjent lag";
+      const logo = team.logo || "";
+      const score = competitor.score ?? "–";
+      const record = hentRecord(team);
+
+      return `
+        <div class="team-row">
+          <div class="team-info">
+            ${
+              logo
+                ? `<img
+                     class="team-logo"
+                     src="${escapeHtml(logo)}"
+                     alt=""
+                     loading="lazy"
+                   >`
+                : ""
+            }
+
+            <div class="team-text">
+              <div class="team-name">${escapeHtml(navn)}</div>
+              ${
+                record
+                  ? `<div class="team-record">${escapeHtml(record)}</div>`
+                  : `<div class="team-record">W–L ikke tilgjengelig</div>`
+              }
+            </div>
           </div>
-          ${teamHTML(away)}
-          ${teamHTML(home)}
-        </article>`;
-      }).join("");
 
-    document.querySelector("#updated").textContent =
-      `Uke ${data.week?.number ?? "–"} · Oppdatert ${
-        new Date().toLocaleTimeString("no-NO")}`;
-  } catch (e) {
-    document.querySelector("#updated").textContent =
-      "Kunne ikke hente data. Prøver igjen automatisk.";
-    console.error(e);
-  }
-}
+          <div class="team-score">${escapeHtml(score)}</div>
+        </div>
+      `;
+    }
 
-refresh();
-setInterval(() => {
-  if (!document.hidden) refresh();
-}, 15000);
+    function kampStatus(event) {
+      const status = event.status?.type || {};
+      const state = status.state;
+      const description = status.shortDetail || status.detail || "";
 
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) refresh();
-});
-</script>
+      if (state === "in") {
+        return {
+          text: description || "LIVE",
+          className: "live"
+        };
+      }
+
+      if (state === "post") {
+        return {
+          text: status.completed ? "FERDIG" : (description || "FERDIG"),
+          className: "final"
+        };
+      }
+
+      return {
+        text: description || "KOMMENDE",
+        className: ""
+      };
+    }
+
+    function lagKort(event) {
+      const competition = event.competitions?.[0];
+      const competitors = competition?.competitors || [];
+
+      const home = competitors.find(team => team.homeAway === "home");
+      const away = competitors.find(team => team.homeAway === "away");
+
+      if (!home || !away) return "";
+
+      const status = kampStatus(event);
+      const venue = competition.venue?.fullName || "";
+
+      return `
+        <article class="game">
+          <div class="game-header">
+            <div class="game-date">
+              ${escapeHtml(norskDato(event.date))}
+            </div>
+
+            <div class="status ${status.className}">
+              ${escapeHtml(status.text)}
+            </div>
+          </div>
+
+          ${lagRad(away)}
+          ${lagRad(home)}
+
+          <div class="game-footer">
+            <span>${escapeHtml(venue || "NFL")}</span>
+            <span>${escapeHtml(event.name || "")}</span>
+          </div>
+        </article>
+      `;
+    }
+
+    async function hentKamper() {
+      const gamesElement = document.getElementById("games");
+      const updatedElement = document.getElementById("lastUpdated");
+
+      try {
+        const response = await fetch(API_URL, {
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP-feil ${response.status}`);
+        }
+
+        const data = await response.json();
+        const events = data.events || [];
+
+        if (events.length === 0) {
+          gamesElement.innerHTML = `
+            <div class="message">
+              Ingen kamper funnet akkurat nå.
+              Prøv igjen litt senere.
+            </div>
+          `;
+        } else {
+          gamesElement.innerHTML = events
+            .map(lagKort)
+            .filter(Boolean)
+            .join("");
+        }
+
+        updatedElement.textContent =
+          "Oppdatert " +
+          new Intl.DateTimeFormat("nb-NO", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            timeZone: "Europe/Oslo"
+          }).format(new Date());
+
+      } catch (error) {
+        console.error("Kunne ikke hente NFL-resultater:", error);
+
+        gamesElement.innerHTML = `
+          <div class="message error">
+            Kunne ikke hente NFL-resultatene.<br>
+            Kontroller internettforbindelsen, eller prøv igjen senere.
+            <br><br>
+            Hvis dette skjer hver gang, kan ESPN API-et ha begrenset
+            direkte forespørsler fra nettleseren (CORS).
+          </div>
+        `;
+
+        updatedElement.textContent = "Oppdatering mislyktes";
+      }
+    }
+
+    hentKamper();
+    setInterval(hentKamper, REFRESH_INTERVAL);
+  </script>
 </body>
 </html>
+```
