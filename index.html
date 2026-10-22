@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -114,7 +113,7 @@
     .team-info {
       display: flex;
       align-items: center;
-      gap: 11px;
+      gap: 8px;
       min-width: 0;
     }
 
@@ -217,7 +216,7 @@
     const API_URL =
       "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
-    const REFRESH_INTERVAL = 15000;
+    const REFRESH_INTERVAL = 150000;
 
     function escapeHtml(value) {
       return String(value ?? "").replace(/[&<>"']/g, char => ({
@@ -257,24 +256,30 @@
     }
 
     // Hent lagets W-L-statistikk fra ESPN.
-    function hentRecord(team) {
-      const records = team.records || [];
+    function hentRecord(competitor) {
+      const team = competitor.team || {};
 
+      // ESPN kan legge statistikken på laget eller på competitor.
+      const records = [
+        ...(competitor.records || []),
+        ...(team.records || [])
+      ];
+
+      // Se etter totalstatistikk for sesongen.
       const overall = records.find(record =>
-        /overall|total|regular season/i.test(
+        /total|overall|overall record/i.test(
           `${record.type || ""} ${record.name || ""} ${record.abbreviation || ""}`
         )
       );
 
-      const valgt = overall || records[0];
+      const record = overall || records[0];
 
-      if (valgt?.summary) {
-        return valgt.summary.replace(/-/g, "–");
+      if (record?.summary) {
+        return record.summary.replace(/-/g, "–");
       }
 
-      // Enkel reserve hvis API-et leverer seire og tap separat.
-      if (valgt && valgt.wins != null && valgt.losses != null) {
-        return `${valgt.wins}–${valgt.losses}`;
+      if (record?.wins != null && record?.losses != null) {
+        return `${record.wins}–${record.losses}`;
       }
 
       return "";
@@ -285,7 +290,7 @@
       const navn = team.displayName || team.name || "Ukjent lag";
       const logo = team.logo || "";
       const score = competitor.score ?? "–";
-      const record = hentRecord(team);
+      const record = hentRecord(competitor);
 
       return `
         <div class="team-row">
@@ -360,9 +365,9 @@
               ${escapeHtml(norskDato(event.date))}
             </div>
 
-            <div class="status ${status.className}">
+            <!--<div class="status ${status.className}">
               ${escapeHtml(status.text)}
-            </div>
+            </div>-->
           </div>
 
           ${lagRad(away)}
