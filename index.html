@@ -61,8 +61,8 @@
 
     .games {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
     }
 
     .game {
@@ -78,7 +78,7 @@
       justify-content: space-between;
       align-items: center;
       gap: 10px;
-      margin-bottom: 16px;
+      margin-bottom: 0px;
     }
 
     .game-date {
@@ -129,7 +129,7 @@
     }
 
     .team-name {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 700;
       line-height: 1.3;
       overflow-wrap: anywhere;
@@ -182,11 +182,42 @@
       }
 
       .games {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
       }
 
       .game {
         padding: 13px;
+      }
+    }
+
+    /* Green border for live games */
+    .game.live-game {
+      border: 1px solid #35d07f;
+      box-shadow: 0 0 8px rgba(53, 208, 127, 0.12);
+    }
+
+    /* Smooth blinking when the score changes */
+    .game.score-changed {
+      animation: scorePulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes scorePulse {
+      0%, 100% {
+        border-color: #35d07f;
+        background-color: var(--tile);
+      }
+
+      50% {
+        border-color: #b5ffd0;
+        background-color: #1c2b2b;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .game.score-changed {
+        animation: none;
+        border-color: #35d07f;
       }
     }
   </style>
@@ -197,9 +228,6 @@
     <header>
       <div>
         <h1>🏈 NFL Scores</h1>
-        <div class="subtitle">
-          Resultater, kampstatus og lagstatistikk
-        </div>
       </div>
 
       <div class="refresh" id="lastUpdated">
@@ -216,7 +244,7 @@
     const API_URL =
       "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
-    const REFRESH_INTERVAL = 150000;
+    const REFRESH_INTERVAL = 15000;
 
     function escapeHtml(value) {
       return String(value ?? "").replace(/[&<>"']/g, char => ({
@@ -346,6 +374,34 @@
       };
     }
 
+    const previousScores = new Map();
+    const blinkingGames = new Map();
+
+    function scoreChanged(eventId, score) {
+      const previous = previousScores.get(eventId);
+      previousScores.set(eventId, score);
+
+      if (previous === undefined || previous === score) {
+        return false;
+      }
+
+      blinkingGames.set(eventId, Date.now() + 10000);
+      return true;
+    }
+
+    function isBlinking(eventId) {
+      const until = blinkingGames.get(eventId);
+
+      if (!until) return false;
+
+      if (Date.now() >= until) {
+        blinkingGames.delete(eventId);
+        return false;
+      }
+
+      return true;
+    }
+
     function lagKort(event) {
       const competition = event.competitions?.[0];
       const competitors = competition?.competitors || [];
@@ -356,10 +412,20 @@
       if (!home || !away) return "";
 
       const status = kampStatus(event);
+      const eventId = event.id;
+      const scoreKey = [
+        away.score ?? "0",
+        home.score ?? "0"
+      ].join("-");
+
+      scoreChanged(eventId, scoreKey);
+
+      const liveClass = status.className === "live" ? "live-game" : "";
+      const blinkClass = isBlinking(eventId) ? "score-changed" : "";
       const venue = competition.venue?.fullName || "";
 
       return `
-        <article class="game">
+        <article class="game ${liveClass} ${blinkClass}">
           <div class="game-header">
             <div class="game-date">
               ${escapeHtml(norskDato(event.date))}
@@ -373,10 +439,10 @@
           ${lagRad(away)}
           ${lagRad(home)}
 
-          <div class="game-footer">
+          <!--<div class="game-footer">
             <span>${escapeHtml(venue || "NFL")}</span>
             <span>${escapeHtml(event.name || "")}</span>
-          </div>
+          </div>-->
         </article>
       `;
     }
@@ -419,6 +485,15 @@
             second: "2-digit",
             timeZone: "Europe/Oslo"
           }).format(new Date());
+
+          setTimeout(() => {
+            document.querySelectorAll(".game.score-changed").forEach(tile => {
+              const eventId = tile.querySelector("[data-event-id]")?.dataset.eventId;
+              if (eventId && !isBlinking(eventId)) {
+                tile.classList.remove("score-changed");
+              }
+            });
+          }, 10000);
 
       } catch (error) {
         console.error("Kunne ikke hente NFL-resultater:", error);
