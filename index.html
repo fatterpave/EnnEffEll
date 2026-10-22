@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NFL Live</title>
+<style>
+  body {
+    margin: 0; padding: 16px;
+    background: #090d16; color: white;
+    font: 15px system-ui, sans-serif;
+  }
+  h1 { margin-top: 0; }
+  #games {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    gap: 12px;
+  }
+  .game {
+    background: #171f2e;
+    border: 1px solid #2a3548;
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .status {
+    color: #9caac0;
+    text-align: center;
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+  .live { color: #5df0aa; }
+  .team {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  img { width: 30px; height: 30px; object-fit: contain; }
+  .name { font-weight: 700; font-size: 12px; }
+  .record { display: block; color: #9caac0; font-size: 10px; }
+  .score { font-size: 26px; font-weight: 800; }
+  #updated { color: #9caac0; font-size: 12px; margin: 16px 0; }
+</style>
+</head>
+<body>
+<h1>🏈 NFL LIVE</h1>
+<div id="updated">Henter resultater …</div>
+<main id="games"></main>
+
+<script>
+const API =
+  "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
+  "&":"&amp;", "<":"&lt;", ">":"&gt;",
+  '"':"&quot;", "'":"&#39;"
+})[c]);
+
+function record(team) {
+  const records = team.records || [];
+  return records.find(r => r.type === "total")?.summary
+    || records[0]?.summary || "";
+}
+
+function teamHTML(t) {
+  const logo = t.team.logo || "";
+  return `<div class="team">
+    <img src="${esc(logo)}" alt="">
+    <div class="name">${esc(t.team.displayName)}
+      <span class="record">${esc(record(t.team))}</span>
+    </div>
+    <div class="score">${esc(t.score ?? "–")}</div>
+  </div>`;
+}
+
+async function refresh() {
+  try {
+    const r = await fetch(API, {cache: "no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+
+    document.querySelector("#games").innerHTML =
+      (data.events || []).map(event => {
+        const c = event.competitions?.[0];
+        if (!c) return "";
+        const teams = c.competitors || [];
+        const away = teams.find(t => t.homeAway === "away");
+        const home = teams.find(t => t.homeAway === "home");
+        if (!away || !home) return "";
+
+        const status = c.status?.type || event.status?.type || {};
+        const live = status.state === "in";
+        const label = status.shortDetail || status.detail
+          || (status.completed ? "Ferdig" : "Kommende");
+
+        return `<article class="game">
+          <div class="status ${live ? "live" : ""}">
+            ${live ? "● LIVE · " : ""}${esc(label)}
+          </div>
+          ${teamHTML(away)}
+          ${teamHTML(home)}
+        </article>`;
+      }).join("");
+
+    document.querySelector("#updated").textContent =
+      `Uke ${data.week?.number ?? "–"} · Oppdatert ${
+        new Date().toLocaleTimeString("no-NO")}`;
+  } catch (e) {
+    document.querySelector("#updated").textContent =
+      "Kunne ikke hente data. Prøver igjen automatisk.";
+    console.error(e);
+  }
+}
+
+refresh();
+setInterval(() => {
+  if (!document.hidden) refresh();
+}, 15000);
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refresh();
+});
+</script>
+</body>
+</html>
