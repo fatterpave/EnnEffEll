@@ -202,6 +202,14 @@
       animation: scorePulse 1.2s ease-in-out infinite;
     }
 
+    .game-clock {
+      font-size: 11px;
+      font-weight: 700;
+      color: #ff7373;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
     @keyframes scorePulse {
       0%, 100% {
         border-color: #35d07f;
@@ -374,6 +382,21 @@
       };
     }
 
+    function kampKlokke(event) {
+      const status = event.status || {};
+      const type = status.type || {};
+
+      if (type.state !== "in") return "";
+      if (type.name === "STATUS_HALFTIME") return "Pause";
+
+      const p = status.period ?? 0;
+      const kvarter = p > 4 ? (p === 5 ? "OT" : `${p - 4}. OT`) : `Q${p}`;
+
+      if (type.name === "STATUS_END_PERIOD") return `Slutt ${kvarter}`;
+
+      return `${kvarter} · ${status.displayClock ?? ""}`;
+    }
+
     const previousScores = new Map();
     const blinkingGames = new Map();
 
@@ -412,6 +435,7 @@
       if (!home || !away) return "";
 
       const status = kampStatus(event);
+      const klokke = kampKlokke(event);
       const eventId = event.id;
       const scoreKey = [
         away.score ?? "0",
@@ -431,9 +455,7 @@
               ${escapeHtml(norskDato(event.date))}
             </div>
 
-            <!--<div class="status ${status.className}">
-              ${escapeHtml(status.text)}
-            </div>-->
+            ${klokke ? `<div class="game-clock">${escapeHtml(klokke)}</div>` : ""}
           </div>
 
           ${lagRad(away)}
