@@ -247,6 +247,10 @@
       box-shadow: 0 0 8px rgba(53, 208, 127, 0.12);
     }
 
+    .game.final-game {
+      color: gray;
+    }
+
     /* Smooth blinking when the score changes */
     .game.score-changed {
       animation: scorePulse 1.2s ease-in-out infinite;
@@ -512,6 +516,7 @@
     }
 
     if (state === "post") {
+      console.log(event);
       return {
         text: status.completed ? "FERDIG" : (description || "FERDIG"),
         className: "final"
@@ -593,7 +598,7 @@
 
     scoreChanged(eventId, scoreKey);
 
-    const liveClass = status.className === "live" ? "live-game" : "";
+    const liveClass = status.className === "live" ? "live-game" : status.className === "final" ? "final-game" : "";
     const blinkClass = isBlinking(eventId) ? "score-changed" : "";
     const venue = competition.venue?.fullName || "";
 
